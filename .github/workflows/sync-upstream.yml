@@ -1,0 +1,112 @@
+name: Sync Pi AI Package
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 */12 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout mirror repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone upstream repository
+        run: |
+          git clone https://github.com/earendil-works/pi.git upstream
+
+      - name: Determine latest upstream tag
+        id: upstream
+        run: |
+          cd upstream
+
+          git fetch --tags
+
+          TAG=$(git tag --sort=-version:refname | head -n 1)
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if tag already mirrored
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists locally."
+            exit 0
+          fi
+
+      - name: Export packages/ai from upstream tag
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+
+          cd upstream
+          git checkout "$TAG"
+
+          COMMIT_SHA=$(git rev-parse HEAD)
+
+          cd ..
+
+          mkdir export
+
+          rsync -a \
+            --delete \
+            upstream/packages/ai/ \
+            export/
+
+          cat > export/.upstream-source.json <<EOF
+          {
+            "upstream_repo": "https://github.com/earendil-works/pi",
+            "upstream_tag": "$TAG",
+            "upstream_commit": "$COMMIT_SHA",
+            "source_path": "packages/ai"
+          }
+          EOF
+
+      - name: Replace repository contents
+        run: |
+          find . \
+            -mindepth 1 \
+            -maxdepth 1 \
+            ! -name ".git" \
+            ! -name ".github" \
+            ! -name "export" \
+            -exec rm -rf {} +
+
+          shopt -s dotglob
+          mv export/* .
+          rm -rf export
+
+      - name: Commit changes
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add .
+
+          if git diff --cached --quiet; then
+            echo "No content changes detected."
+            exit 0
+          fi
+
+          git commit -m "sync: $TAG"
+
+      - name: Push commit
+        run: |
+          git push origin main
+
+      - name: Create and push tag
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+
+          git tag "$TAG"
+          git push origin "$TAG"
