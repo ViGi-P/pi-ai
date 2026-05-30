@@ -34,16 +34,19 @@ jobs:
 
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Skip if tag already mirrored
+      - name: Check if tag already mirrored
+        id: tag_check
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
 
           if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists locally."
-            exit 0
+            echo "already_mirrored=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_mirrored=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Export packages/ai from upstream tag
+        if: steps.tag_check.outputs.already_mirrored == 'false'
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
 
@@ -71,6 +74,7 @@ jobs:
           EOF
 
       - name: Replace repository contents
+        if: steps.tag_check.outputs.already_mirrored == 'false'
         run: |
           find . \
             -mindepth 1 \
@@ -85,6 +89,7 @@ jobs:
           rm -rf export
 
       - name: Commit changes
+        if: steps.tag_check.outputs.already_mirrored == 'false'
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
 
@@ -101,6 +106,7 @@ jobs:
           git commit -m "sync: $TAG"
 
       - name: Push commit
+        if: steps.tag_check.outputs.already_mirrored == 'false'
         run: |
           git push origin main
 
