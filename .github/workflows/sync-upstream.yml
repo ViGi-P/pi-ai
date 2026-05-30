@@ -111,6 +111,7 @@ jobs:
           git push origin main
 
       - name: Create and push tag
+        if: steps.tag_check.outputs.already_mirrored == 'false'
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
 
