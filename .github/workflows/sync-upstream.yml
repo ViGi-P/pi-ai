@@ -39,7 +39,7 @@ jobs:
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
 
-          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+          if git rev-parse "refs/tags/${TAG}-upstream" >/dev/null 2>&1; then
             echo "already_mirrored=true" >> "$GITHUB_OUTPUT"
           else
             echo "already_mirrored=false" >> "$GITHUB_OUTPUT"
@@ -57,14 +57,14 @@ jobs:
 
           cd ..
 
-          mkdir export
+          mkdir -p pi-ai
 
           rsync -a \
             --delete \
             upstream/packages/ai/ \
             export/
 
-          cat > export/.upstream-source.json <<EOF
+          cat > pi-ai/.upstream-source.json <<EOF
           {
             "upstream_repo": "https://github.com/earendil-works/pi",
             "upstream_tag": "$TAG",
@@ -84,9 +84,6 @@ jobs:
             ! -name "export" \
             -exec rm -rf {} +
 
-          shopt -s dotglob
-          mv export/* .
-          rm -rf export
 
       - name: Commit changes
         if: steps.tag_check.outputs.already_mirrored == 'false'
@@ -103,17 +100,17 @@ jobs:
             exit 0
           fi
 
-          git commit -m "sync: $TAG"
+          git commit -m "sync: ${TAG}-upstream"
 
       - name: Push commit
         if: steps.tag_check.outputs.already_mirrored == 'false'
         run: |
-          git push origin main
+          git push origin upstream
 
       - name: Create and push tag
         if: steps.tag_check.outputs.already_mirrored == 'false'
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
 
-          git tag "$TAG"
-          git push origin "$TAG"
+          git tag "${TAG}-upstream"
+          git push origin "${TAG}-upstream"
