@@ -14,9 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout mirror repository
+      - name: Checkout upstream mirror branch
         uses: actions/checkout@v4
         with:
+          ref: upstream
           fetch-depth: 0
 
       - name: Clone upstream repository
