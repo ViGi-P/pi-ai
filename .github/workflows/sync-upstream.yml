@@ -63,7 +63,7 @@ jobs:
           rsync -a \
             --delete \
             upstream/packages/ai/ \
-            export/
+            pi-ai/
 
           cat > pi-ai/.upstream-source.json <<EOF
           {
