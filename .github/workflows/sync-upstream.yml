@@ -105,7 +105,7 @@ jobs:
       - name: Push commit
         if: steps.tag_check.outputs.already_mirrored == 'false'
         run: |
-          git push origin upstream
+          git push origin HEAD:upstream
 
       - name: Create and push tag
         if: steps.tag_check.outputs.already_mirrored == 'false'
