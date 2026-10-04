@@ -1,6 +1,6 @@
 {
   "upstream_repo": "https://github.com/earendil-works/pi",
-  "upstream_tag": "v1.0.0",
-  "upstream_commit": "a13d35a742c6ef8462812a28fbe1d8c8b7431c32",
+  "upstream_tag": "v1.0.2",
+  "upstream_commit": "cd32f7725fdbddbaecdff5b1e68491563394e0ca",
   "source_path": "packages/ai"
 }
